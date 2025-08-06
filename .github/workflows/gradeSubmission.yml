@@ -1,0 +1,71 @@
+name: Grade Submission
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      submissionUrl:
+        # Friendly description to be shown in the UI instead of 'name'
+        description: "Submission URL"
+        # Default value if no value is explicitly provided
+        default: "{username/orgname}/{repo}"
+        # Input has to be provided for the workflow to run
+        required: true
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "greet"
+  grade-submission:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    name: Grade Submission
+    steps:
+      # checkout the solution branch
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: "solution"
+      # checkout the candidate's submission (default branch) into /tmp
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: "${{ github.event.inputs.submissionUrl }}"
+          path: "./tmp"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ^20.0
+          check-latest: false
+      - name: Copy solution from submission
+        # copy and override folder
+        run: |
+          cp -r ./tmp/pages/* ./pages
+          cp -r ./tmp/styles ./styles
+          cp -r ./tmp/src ./src
+          rm -rf ./tmp
+      - name: Install dependencies
+        run: npm install
+      - name: Grade solution
+        run: npm run test
+      - name: Run Cypress CSS grading
+        uses: cypress-io/github-action@v6
+        id: cypress
+        with:
+          build: npm run build
+          start: npm start
+          wait-on: "http://localhost:3000"
+      - name: Send mail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: "Grading ${{ github.event.inputs.submissionUrl }}"
+          to: ${{secrets.GRADER}}
+          from: ${{secrets.GRADER}}
+          body: Grading of submission ${{ github.event.inputs.submissionUrl }} has completed. Find following results attached and CSS results are ${{ steps.cypress.outcome }}
+          attachments: ./test-report.html
