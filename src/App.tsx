@@ -84,6 +84,7 @@ function App() {
           ...addr,
           houseNumber: houseNumber, // transformAddress
         }));
+
         setAddresses(results);
       } else {
         setError(data.errormessage);
@@ -125,7 +126,7 @@ function App() {
 
   return (
     <main>
-      <Section>
+      <Section key={"first section"}>
         <h1>
           Create your own address book!
           <br />
@@ -159,12 +160,12 @@ function App() {
           submitText="Find"
         />
         {addresses.length > 0 &&
-          addresses.map((address) => {
+          addresses.map((address, index) => {
             return (
               <Radio
                 name="selectedAddress"
                 id={address.id}
-                key={address.id}
+                key={address.id || `${address.street}-${index}`}
                 onChange={handleSelectedAddressChange}
               >
                 <Address {...address} />

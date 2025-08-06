@@ -31,7 +31,7 @@ const Form: FunctionComponent<FormProps> = ({
   submitText
 }) => {
   return (
-    <form onSubmit={(e) => onFormSubmit(e)}>
+    <form onSubmit={onFormSubmit}>
       <fieldset>
         <legend>{label}</legend>
         {formEntries.map(({ name, placeholder, extraProps }, index) => (
